@@ -19,7 +19,7 @@
 
 ## Что нужно для запуска
 
-1. Python 3.11+
+1. Python 3.10+
 2. Telegram `API_ID` и `API_HASH`
 3. Session-файл Telethon для вашего Telegram-аккаунта
 
@@ -165,22 +165,87 @@ TG_SUMMARY_DESTINATION_CHAT=-1003631955503
 
 Использовать numeric ID надежнее, чем display title.
 
-## 9. Automation в Codex
+## 9. Продакшн-запуск на сервере
 
-Рекомендуемый режим:
-- каждый день
-- `09:00`
-- таймзона `Europe/Moscow`
-- summary за прошлый календарный день
+Для продакшна рекомендуемый путь:
+- Linux/VPS
+- отдельный пользователь под сервис
+- `systemd service + timer`
 
-Команда для automation:
+Это надежнее, чем запуск с ноутбука или через агентные automation-раннеры.
+
+### Базовая установка на сервер
 
 ```bash
-cd /path/to/telegram-daily-html-summary
-./scripts/run_daily_summary.sh
+sudo apt-get update
+sudo apt-get install -y git python3-venv python3-pip
+
+sudo useradd -m -s /bin/bash telegramsummary
+sudo -u telegramsummary git clone https://github.com/ilyachu/telegram-daily-html-summary.git /home/telegramsummary/app/telegram-daily-html-summary
+sudo -u telegramsummary python3 -m venv /home/telegramsummary/app/telegram-daily-html-summary/.venv
+sudo -u telegramsummary /home/telegramsummary/app/telegram-daily-html-summary/.venv/bin/pip install -r /home/telegramsummary/app/telegram-daily-html-summary/scripts/requirements-telegram-summary.txt
 ```
 
-## 10. Безопасность
+### Куда положить секреты и session
+
+Рекомендуемый runtime-каталог:
+
+```bash
+/home/telegramsummary/.config/telegram-daily-html-summary/
+```
+
+Там должны лежать:
+
+```text
+/home/telegramsummary/.config/telegram-daily-html-summary/.env
+/home/telegramsummary/.config/telegram-daily-html-summary/.telegram/telegram_user.session
+```
+
+Важно:
+- `run_daily_summary.sh` умеет искать конфиг не только в локальном `.env`, но и в `~/.config/telegram-daily-html-summary/.env`
+- это удобно для серверов, CI и automation-сред
+
+### systemd
+
+Готовые шаблоны лежат в:
+
+- `deploy/systemd/telegram-daily-summary.service`
+- `deploy/systemd/telegram-daily-summary.timer`
+
+Пример установки:
+
+```bash
+sudo cp deploy/systemd/telegram-daily-summary.service /etc/systemd/system/
+sudo cp deploy/systemd/telegram-daily-summary.timer /etc/systemd/system/
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now telegram-daily-summary.timer
+```
+
+Проверка:
+
+```bash
+systemctl status telegram-daily-summary.service
+systemctl status telegram-daily-summary.timer
+journalctl -u telegram-daily-summary.service -n 50 --no-pager
+```
+
+Таймер можно запускать по Москве, например:
+- каждый день
+- в `09:00 Europe/Moscow`
+- за прошлый календарный день
+
+## 10. Codex automation
+
+Технически использовать можно, но это не основной рекомендуемый путь.
+
+Причина:
+- `Codex automation` работает через отдельный runtime/worktree
+- для сетевых Telethon-задач это менее предсказуемо, чем системный scheduler
+
+Если нужна надежная ежедневная публикация — лучше VPS + `systemd timer`.
+
+## 11. Безопасность
 
 Никогда не коммитьте:
 - `.env`
@@ -189,3 +254,19 @@ cd /path/to/telegram-daily-html-summary
 - любые приватные ключи и токены
 
 Репозиторий можно публиковать только если секреты остаются локально.
+
+## 12. Можно ли сделать из этого skill
+
+Да.
+
+Но важно различать две роли:
+
+- **service/runtime** — это сам daily-summary сервис, который должен жить на сервере и запускаться по расписанию;
+- **skill** — это помощник для агента, который умеет:
+  - подготовить `.env`
+  - объяснить авторизацию Telethon
+  - развернуть проект на VPS
+  - установить `systemd service + timer`
+  - проверить логи и статус
+
+То есть skill здесь полезен как **установщик и оператор**, а не как замена самому сервису.

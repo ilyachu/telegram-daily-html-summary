@@ -1,0 +1,12 @@
+[Unit]
+Description=Telegram Daily HTML Summary
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=telegramsummary
+Group=telegramsummary
+WorkingDirectory=/home/telegramsummary/app/telegram-daily-html-summary
+Environment=HOME=/home/telegramsummary
+ExecStart=/home/telegramsummary/app/telegram-daily-html-summary/scripts/run_daily_summary.sh

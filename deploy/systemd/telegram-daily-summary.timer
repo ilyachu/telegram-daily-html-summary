@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Telegram Daily HTML Summary every day at 09:00 Moscow time
+
+[Timer]
+OnCalendar=*-*-* 09:00:00 Europe/Moscow
+Persistent=true
+Unit=telegram-daily-summary.service
+
+[Install]
+WantedBy=timers.target
