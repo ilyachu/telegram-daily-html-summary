@@ -29,7 +29,12 @@ if [[ -n "${TG_SESSION_NAME:-}" && "${TG_SESSION_NAME}" != /* ]]; then
   fi
 fi
 
-python3 scripts/telegram_daily_html_summary.py \
+PYTHON_BIN="python3"
+if [[ -x "$ROOT_DIR/.venv/bin/python3" ]]; then
+  PYTHON_BIN="$ROOT_DIR/.venv/bin/python3"
+fi
+
+"$PYTHON_BIN" scripts/telegram_daily_html_summary.py \
   --window "${TG_SUMMARY_WINDOW:-yesterday}" \
   --timezone "${TG_SUMMARY_TIMEZONE:-Europe/Moscow}" \
   --output-dir "${TG_SUMMARY_OUTPUT_DIR:-output/telegram_daily_html}" \
