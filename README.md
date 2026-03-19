@@ -1,49 +1,51 @@
 # Telegram Daily HTML Summary
 
-Daily digest for Telegram chats.
+Инструмент для ежедневных Telegram-сводок.
 
-The tool reads messages from a source chat, builds one Telegram-safe HTML summary for the previous calendar day, and posts it into another chat or channel.
+Скрипт читает сообщения из одного Telegram-чата, собирает HTML-summary за прошлый календарный день и публикует его в другой чат или канал.
 
-It focuses on:
-- main topics of the day;
-- repositories and services mentioned in chat;
-- other useful links;
-- source links back to the original Telegram messages (`Источник` / `Обсуждение`).
+Что попадает в сводку:
+- основные темы дня;
+- репозитории и сервисы, которые обсуждали;
+- другие полезные ссылки;
+- ссылки на исходные сообщения в Telegram (`Источник` / `Обсуждение`).
 
-## What this repository contains
+## Что есть в репозитории
 
-- `scripts/telegram_daily_html_summary.py` — main Python script
-- `scripts/run_daily_summary.sh` — wrapper entrypoint for manual runs and automation
-- `.env.example` — required configuration template
-- `scripts/requirements-telegram-summary.txt` — Python dependencies
+- `scripts/telegram_daily_html_summary.py` — основная логика
+- `scripts/run_daily_summary.sh` — стабильная точка входа для ручного запуска и automation
+- `.env.example` — шаблон конфигурации
+- `scripts/requirements-telegram-summary.txt` — Python-зависимости
 
-## Requirements
+## Что нужно для запуска
 
-- Python 3.11+
-- Telegram `API_ID` and `API_HASH`
-- Telethon session for your Telegram account
+1. Python 3.11+
+2. Telegram `API_ID` и `API_HASH`
+3. Session-файл Telethon для вашего Telegram-аккаунта
 
-## 1. Get Telegram credentials
+Важно: это user-account интеграция, а не бот через Bot API.
 
-Open [my.telegram.org](https://my.telegram.org/), log in with your phone number, create an app, and copy:
+## 1. Как получить Telegram API credentials
 
-- `API_ID`
-- `API_HASH`
+1. Откройте [my.telegram.org](https://my.telegram.org/)
+2. Войдите по номеру телефона
+3. Создайте приложение
+4. Скопируйте:
+   - `API_ID`
+   - `API_HASH`
 
-These are user-account credentials, not bot credentials.
-
-## 2. Install
+## 2. Установка
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/ilyachu/telegram-daily-html-summary.git
 cd telegram-daily-html-summary
 python3 -m pip install -r scripts/requirements-telegram-summary.txt
 cp .env.example .env
 ```
 
-## 3. Configure `.env`
+## 3. Что менять в `.env`
 
-Edit `.env` and set:
+Откройте `.env` и заполните:
 
 ```dotenv
 TG_API_ID=123456
@@ -58,57 +60,55 @@ TG_SUMMARY_OUTPUT_DIR=output/telegram_daily_html
 TG_SUMMARY_DESTINATION_CHAT=me
 ```
 
-### What each variable means
+### Что означает каждая переменная
 
 - `TG_API_ID` — Telegram API ID
 - `TG_API_HASH` — Telegram API hash
-- `TG_SESSION_NAME` — Telethon session file path prefix
-- `TG_SUMMARY_CHAT` — source chat to read from
-- `TG_SUMMARY_CHAT_LABEL` — label shown in summary header
-- `TG_SUMMARY_WINDOW` — summary window, recommended: `yesterday`
-- `TG_SUMMARY_TIMEZONE` — timezone for the daily window
-- `TG_SUMMARY_OUTPUT_DIR` — where artifacts are saved
-- `TG_SUMMARY_DESTINATION_CHAT` — where the final summary is posted
+- `TG_SESSION_NAME` — путь-префикс к Telethon session-файлу
+- `TG_SUMMARY_CHAT` — чат-источник, откуда читаем сообщения
+- `TG_SUMMARY_CHAT_LABEL` — подпись в заголовке summary
+- `TG_SUMMARY_WINDOW` — окно выборки; рекомендуемое значение: `yesterday`
+- `TG_SUMMARY_TIMEZONE` — таймзона для daily-окна
+- `TG_SUMMARY_OUTPUT_DIR` — каталог для сохранения артефактов
+- `TG_SUMMARY_DESTINATION_CHAT` — чат или канал, куда отправлять итоговое summary
 
-## 4. First authorization
+## 4. Первая авторизация
 
-If the session file does not exist yet, the first run will ask for:
+Если session-файла еще нет, при первом запуске Telethon попросит:
+- номер телефона
+- код из Telegram
+- пароль 2FA, если он включен
 
-- phone number
-- Telegram code
-- 2FA password, if enabled
+После этого рядом появится локальный session-файл.
 
-After that, Telethon creates a local session file.
+## 5. Ручной запуск
 
-## 5. Manual run
-
-Recommended command:
+Рекомендуемый entrypoint:
 
 ```bash
 ./scripts/run_daily_summary.sh
 ```
 
-The wrapper:
-- loads `.env`
-- uses the configured chat and destination
-- builds the summary
-- posts it to the destination chat
+Wrapper сам:
+- загружает `.env`
+- использует настройки окна и таймзоны
+- отправляет итог в чат из `TG_SUMMARY_DESTINATION_CHAT`
 
-### Examples
+### Примеры
 
-Send to Saved Messages:
+Отправить в `Saved Messages`:
 
 ```bash
 ./scripts/run_daily_summary.sh --destination-chat me
 ```
 
-Send to a specific chat/channel:
+Отправить в конкретный чат/канал:
 
 ```bash
 ./scripts/run_daily_summary.sh --destination-chat -1003631955503
 ```
 
-Override the source chat without changing `.env`:
+Запустить для другого source-чата без правки `.env`:
 
 ```bash
 ./scripts/run_daily_summary.sh \
@@ -116,73 +116,76 @@ Override the source chat without changing `.env`:
   --chat-label "vibecod3rs"
 ```
 
-## 6. Output files
+## 6. Что сохраняется на диск
 
-By default the script saves:
+По умолчанию создаются:
 
 - `output/telegram_daily_html/YYYY-MM-DD_<chat>_summary.html.txt`
 - `output/telegram_daily_html/YYYY-MM-DD_<chat>_links.json`
 
-## 7. Telegram formatting
+## 7. Формат summary
 
-The summary is built as one Telegram HTML message.
+Сообщение собирается как один Telegram HTML post.
 
-Sections:
+Структура:
 - `Основные темы`
 - `Репозитории и сервисы`
 - `Другие ссылки`
 
-Links include:
-- `Источник` for topics
-- `Обсуждение` for repo/service/link mentions
+Для тем добавляется:
+- `Источник`
 
-## 8. Automation in Codex
+Для ссылок добавляется:
+- `Обсуждение`
 
-Recommended schedule:
-- every day
-- `09:00`
-- timezone: `Europe/Moscow`
-- window: previous calendar day
+## 8. Как менять source и destination
 
-Recommended command for automation:
+### Изменить source chat
 
-```bash
-cd /path/to/telegram-daily-html-summary
-./scripts/run_daily_summary.sh
-```
-
-## 9. How to change source and destination
-
-### Change source chat
-
-Edit:
+В `.env`:
 
 ```dotenv
 TG_SUMMARY_CHAT=your_source_chat
 TG_SUMMARY_CHAT_LABEL=Your Chat Name
 ```
 
-### Change destination chat
+### Изменить destination chat
 
-Edit:
+В `.env`:
 
 ```dotenv
 TG_SUMMARY_DESTINATION_CHAT=me
 ```
 
-or use a numeric Telegram chat/channel id:
+или numeric chat/channel id:
 
 ```dotenv
 TG_SUMMARY_DESTINATION_CHAT=-1003631955503
 ```
 
-Using numeric IDs is more reliable than display titles.
+Использовать numeric ID надежнее, чем display title.
 
-## 10. Security
+## 9. Automation в Codex
 
-Do not commit:
+Рекомендуемый режим:
+- каждый день
+- `09:00`
+- таймзона `Europe/Moscow`
+- summary за прошлый календарный день
+
+Команда для automation:
+
+```bash
+cd /path/to/telegram-daily-html-summary
+./scripts/run_daily_summary.sh
+```
+
+## 10. Безопасность
+
+Никогда не коммитьте:
 - `.env`
 - `*.session`
-- any real API keys or hashes
+- реальные `API_HASH`
+- любые приватные ключи и токены
 
-This repository is safe to publish only if you keep secrets local.
+Репозиторий можно публиковать только если секреты остаются локально.
