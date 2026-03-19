@@ -9,9 +9,9 @@ OUT_LOG="$LOG_DIR/codex-automation-stdout.log"
 ERR_LOG="$LOG_DIR/codex-automation-stderr.log"
 SHELL_CMD="cd \"$ROOT_DIR\" && ./scripts/run_daily_summary.sh >> \"$OUT_LOG\" 2>> \"$ERR_LOG\""
 
-/usr/bin/osascript - "$SHELL_CMD" <<'OSA'
-on run argv
-  set cmd to item 1 of argv
-  do shell script "/bin/zsh -lc " & quoted form of cmd
-end run
-OSA
+/usr/bin/osascript \
+  -e 'on run argv' \
+  -e 'set cmd to item 1 of argv' \
+  -e 'do shell script "/bin/zsh -lc " & quoted form of cmd' \
+  -e 'end run' \
+  -- "$SHELL_CMD"
